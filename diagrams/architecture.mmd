@@ -8,23 +8,23 @@ flowchart LR
   subgraph VPC
     direction LR
 
-    subgraph Public_Subnets_(AZ-a/b)
+    subgraph Public Subnets (AZ-a/b)
       ALB[(Application Load Balancer)]
-      ALB_NOTE[[Listeners: 443/HTTPS<br/>Rules: forward/redirect/fixed-response<br/>TLS: ACM + SNI (termination)<br/>Cross-Zone: enabled (default)]]:::warn
+      ALB_NOTE[[Listeners: 443/HTTPS<br/>Rules: forward/redirect/fixed-response<br/>TLS: ACM + SNI (termination)<br/>Cross-Zone: enabled]]
       ALB -.-> ALB_NOTE
     end
 
     %% === Private Tier (Compute) ===
-    subgraph Private_Subnets_(AZ-a/b)
+    subgraph Private Subnets (AZ-a/b)
       ASG[(Auto Scaling Group)]
       TG[(Target Group - HTTP:80)]
-      TG_NOTE[[Health check: GET /health<br/>Expect: 200-399<br/>Deregistration delay: 300s]]:::warn
+      TG_NOTE[[Health check: GET /health<br/>Expect: 200-399<br/>Deregistration delay: 300s]]
       TG -.-> TG_NOTE
     end
   end
 
-  %% === Data/Observability (abstracted) ===
-  subgraph Observability_(Design)
+  %% === Observability ===
+  subgraph Observability (Design)
     CW[(CloudWatch Metrics/Alarms)]
   end
 
@@ -33,15 +33,15 @@ flowchart LR
   ASG -.-> CW
   ALB -.-> CW
 
-  %% === Security Boundaries ===
-  classDef bndry fill:#fff,stroke:#999,stroke-dasharray: 4 3;
+  %% === Styling / SG Hints ===
   classDef sg fill:#eef6ff,stroke:#3b82f6,color:#111;
   classDef warn fill:#fff7ed,stroke:#fb923c,color:#111;
 
-  %% Security Notes
   ALB:::sg
   TG:::sg
   ASG:::sg
+  ALB_NOTE:::warn
+  TG_NOTE:::warn
 
   %% Legend
   subgraph Legend
