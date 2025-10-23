@@ -8,7 +8,7 @@ flowchart LR
   subgraph VPC
     direction LR
 
-    subgraph Public Subnets ("AZ-a/b")
+    subgraph "Public Subnets (AZ-a/b)" 
       ALB[(Application Load Balancer)]
       ALB_NOTE[[Listeners: 443/HTTPS<br/>Rules: forward/redirect/fixed-response<br/>TLS: ACM + SNI (termination)<br/>Cross-Zone: enabled]]
       ALB -.-> ALB_NOTE
