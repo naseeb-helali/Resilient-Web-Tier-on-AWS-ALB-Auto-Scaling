@@ -1,0 +1,67 @@
+%% File: diagrams/architecture.mmd
+%% Purpose: High-level web tier on AWS with ALB + ASG and security boundaries.
+
+flowchart LR
+  %% === External ===
+  subgraph Internet
+    U[Users]
+  end
+
+  %% === Public Tier (L7) ===
+  subgraph VPC
+    direction LR
+
+    subgraph Public_Subnets_(_AZ-a/b_)
+      ALB[(Application Load Balancer)]
+      note right of ALB
+        Listeners: 443/HTTPS
+        Rules/Actions: forward/redirect/fixed-response
+        TLS: ACM + SNI (termination)
+        Cross-Zone: enabled (default)
+      end
+    end
+
+    %% === Private Tier (Compute) ===
+    subgraph Private_Subnets_(_AZ-a/b_)
+      ASG[(Auto Scaling Group)]
+      TG[(Target Group - HTTP:80)]
+      note right of TG
+        Health check:
+        GET /health
+        Expect: 200-399
+        Deregistration delay: 300s
+      end
+    end
+  end
+
+  %% === Data/Observability (abstracted) ===
+  subgraph Observability_(Design)
+    CW[(CloudWatch Metrics/Alarms)]
+  end
+
+  %% === Traffic Flow ===
+  U -->|HTTPS 443| ALB -->|forward| TG -->|HTTP 80| ASG
+  ASG -.-> CW
+  ALB -.-> CW
+
+  %% === Security Boundaries ===
+  classDef bndry fill:#fff,stroke:#999,stroke-dasharray: 4 3;
+  classDef sg fill:#eef6ff,stroke:#3b82f6,color:#111;
+  classDef warn fill:#fff7ed,stroke:#fb923c,color:#111;
+
+  %% Security Notes
+  ALB:::sg
+  TG:::sg
+  ASG:::sg
+
+  %% Annotate SG relationships
+  %% ALB SG: allow 443/tcp from 0.0.0.0/0; egress open
+  %% ASG SG: allow 80/tcp ONLY from ALB SG; no public ingress
+
+  %% Legend
+  subgraph Legend
+    L1[[L7: ALB]]
+    L2[[Compute Pool: ASG]]
+    L3[[TG: Routing + Health]]
+    L4[(Metrics/Alarms)]
+  end
