@@ -15,16 +15,16 @@ flowchart LR
     end
 
     %% === Private Tier (Compute) ===
-    subgraph Private Subnets (AZ-a/b)
+    subgraph "Private Subnets (AZ-a/b)" 
       ASG[(Auto Scaling Group)]
       TG[(Target Group - HTTP:80)]
-      TG_NOTE[[Health check: GET /health<br/>Expect: 200-399<br/>Deregistration delay: 300s]]
+      TG_NOTE["[Health check: GET /health<br/>Expect: 200-399<br/>Deregistration delay: 300s]"]
       TG -.-> TG_NOTE
     end
   end
 
   %% === Observability ===
-  subgraph Observability (Design)
+  subgraph "Observability (Design)" 
     CW[(CloudWatch Metrics/Alarms)]
   end
 
