@@ -1,5 +1,3 @@
-## Purpose: High-level web tier on AWS with ALB + ASG and security boundaries.
-
 flowchart LR
   %% === External ===
   subgraph Internet
@@ -10,26 +8,18 @@ flowchart LR
   subgraph VPC
     direction LR
 
-    subgraph Public_Subnets_(_AZ-a/b_)
+    subgraph Public_Subnets_(AZ-a/b)
       ALB[(Application Load Balancer)]
-      note right of ALB
-        Listeners: 443/HTTPS
-        Rules/Actions: forward/redirect/fixed-response
-        TLS: ACM + SNI (termination)
-        Cross-Zone: enabled (default)
-      end
+      ALB_NOTE[[Listeners: 443/HTTPS<br/>Rules: forward/redirect/fixed-response<br/>TLS: ACM + SNI (termination)<br/>Cross-Zone: enabled (default)]]:::warn
+      ALB -.-> ALB_NOTE
     end
 
     %% === Private Tier (Compute) ===
-    subgraph Private_Subnets_(_AZ-a/b_)
+    subgraph Private_Subnets_(AZ-a/b)
       ASG[(Auto Scaling Group)]
       TG[(Target Group - HTTP:80)]
-      note right of TG
-        Health check:
-        GET /health
-        Expect: 200-399
-        Deregistration delay: 300s
-      end
+      TG_NOTE[[Health check: GET /health<br/>Expect: 200-399<br/>Deregistration delay: 300s]]:::warn
+      TG -.-> TG_NOTE
     end
   end
 
@@ -52,10 +42,6 @@ flowchart LR
   ALB:::sg
   TG:::sg
   ASG:::sg
-
-  %% Annotate SG relationships
-  %% ALB SG: allow 443/tcp from 0.0.0.0/0; egress open
-  %% ASG SG: allow 80/tcp ONLY from ALB SG; no public ingress
 
   %% Legend
   subgraph Legend
