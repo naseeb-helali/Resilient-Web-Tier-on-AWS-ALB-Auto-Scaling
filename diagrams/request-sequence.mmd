@@ -1,0 +1,25 @@
+%% Purpose: Request/health flow to highlight health-aware routing and lifecycle.
+
+sequenceDiagram
+  autonumber
+  participant User
+  participant ALB as ALB (HTTPS)
+  participant TG as Target Group
+  participant EC2 as ASG Instance
+  participant CW as CloudWatch
+
+  User->>ALB: HTTPS GET / (443)
+  ALB->>TG: Evaluate rules → forward
+  TG->>EC2: HTTP 80 / (routes to healthy instance)
+  EC2-->>User: 200 OK
+
+  par Continuous Health
+    ALB->>TG: Periodic health check /health
+    TG->>EC2: GET /health (expects 200–399)
+    EC2-->>TG: 200 OK
+  and Auto Scaling Signals
+    EC2-->>CW: Metrics (CPU, Latency...)
+    ALB-->>CW: Metrics (Requests, 5xx, HealthyHostCount)
+  end
+
+  Note over TG,EC2: Deregistration delay = 300s protects in-flight sessions during scale-in
