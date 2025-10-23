@@ -28,17 +28,16 @@ Translate Elastic Load Balancing + Auto Scaling fundamentals into a **production
 ## 🗺️ Architecture Diagram
 
 ```mermaid
-%% Embedded for GitHub preview. Source also available under diagrams/architecture.mmd
 flowchart LR
   subgraph Internet
     U[Users]
   end
   subgraph VPC
     direction LR
-    subgraph Public_Subnets_(AZ-a/b)
+    subgraph "Public_Subnets_(AZ-a/b)" 
       ALB[(Application Load Balancer)]
     end
-    subgraph Private_Subnets_(AZ-a/b)
+    subgraph "Private_Subnets_(AZ-a/b)" 
       ASG[(Auto Scaling Group)]
       TG[(Target Group - HTTP:80)]
     end
