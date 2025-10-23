@@ -25,6 +25,29 @@ Translate Elastic Load Balancing + Auto Scaling fundamentals into a **production
 
 > The architecture diagram will be added in `diagrams/architecture.mmd` as part of Step-2.
 
+## 🗺️ Architecture Diagram
+
+```mermaid
+%% Embedded for GitHub preview. Source also available under diagrams/architecture.mmd
+flowchart LR
+  subgraph Internet
+    U[Users]
+  end
+  subgraph VPC
+    direction LR
+    subgraph Public_Subnets_(AZ-a/b)
+      ALB[(Application Load Balancer)]
+    end
+    subgraph Private_Subnets_(AZ-a/b)
+      ASG[(Auto Scaling Group)]
+      TG[(Target Group - HTTP:80)]
+    end
+  end
+  U -->|HTTPS 443| ALB -->|forward| TG -->|HTTP 80| ASG
+  %% Security: ALB SG (443 from internet); ASG SG (80 only from ALB SG)
+  %% Health: TG /health expects 200–399; Deregistration delay = 300s
+  %% TLS: Terminated at ALB via ACM + SNI
+```
 ## 🔒 Security Model
 - **ALB Security Group**: allow inbound `443/tcp` from the internet; egress open.
 - **ASG Security Group**: allow inbound `80/tcp` **only** from the ALB SG; no public ingress.
