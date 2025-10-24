@@ -77,13 +77,13 @@ Validate Drift (tags vs code)	Every commit	CI/CD (Phase-2)	GitHub Actions
 
 ## ✅ Compliance Checkpoints
 
-[ ] Every Terraform resource block includes tags.
+- [ ] Every Terraform resource block includes tags.
 
-[ ] Default tags declared in one place (variables.tf).
+- [ ] Default tags declared in one place (variables.tf).
 
-[ ] TTL defined for all test environments.
+- [ ] TTL defined for all test environments.
 
-[ ] Monthly review via Cost Explorer filters.
+- [ ] Monthly review via Cost Explorer filters.
 
 ---
 
