@@ -74,7 +74,7 @@ flowchart LR
 
 ## 📂 Repository Structure
 ```mermaid
-elb-asg-blueprint/
+Resilient Web Tier on AWS — ALB + Auto Scaling/
 ├─ README.md
 ├─ diagrams/
 │  ├─ architecture.mmd
@@ -85,7 +85,7 @@ elb-asg-blueprint/
 │  ├─ variables.tf
 │  ├─ outputs.tf
 │  ├─ README.md
-│  └─ user_data/bootstrap.sh
+│  └─ userdata/bootstrap.sh
 ├─ runbooks/
 │  ├─ incident-unhealthy-targets.md
 │  ├─ incident-5xx-spike.md
@@ -98,19 +98,11 @@ elb-asg-blueprint/
 │  ├─ iac-sanity.sh
 │  ├─ health-endpoint-check.sh
 │  └─ README.md
-├─ docs/
-│  ├─ adr/ADR-001-alb-vs-nlb.md
-│  ├─ PORTFOLIO.md
-│  ├─ CHANGELOG.md
-│  └─ assets/
-│     ├─ plan.txt
-│     └─ tf-graph.png
 ├─ .github/
 │  ├─ ISSUE_TEMPLATE/
 │  │  ├─ 01-requirements.md
 │  │  └─ 02-adr.md
 │  └─ PULL_REQUEST_TEMPLATE.md
-├─ .gitignore
 └─ Makefile
 ```
 ---
