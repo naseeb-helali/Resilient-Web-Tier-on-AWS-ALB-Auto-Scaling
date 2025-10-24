@@ -4,6 +4,8 @@
 Translate Elastic Load Balancing + Auto Scaling fundamentals into a **production-grade blueprint** that is deployable later.  
 **Phase-1 is plan-only** to keep operational cost at zero, while establishing architecture, documentation, and IaC structure.
 
+---
+
 ## 📦 Scope (Phase-1 Only)
 - Application Load Balancer (ALB): Listeners, Rules, Actions, TLS offloading (ACM), optional stickiness.
 - Target Groups (HTTP), Health Checks, Deregistration Delay.
@@ -14,75 +16,233 @@ Translate Elastic Load Balancing + Auto Scaling fundamentals into a **production
 - Observability hooks (CloudWatch metrics) **by design**.
 - Security boundary: ALB SG → ASG SG only.
 
-> Out of scope in Phase-1: CI/CD, containerization, K8s, real apply; these arrive in Phase-2.
+> Out of scope in Phase-1: CI/CD, containerization, K8s, or any real `apply`.  
+> Those arrive in Phase-2 (DevOps tooling).
+
+---
 
 ## 📐 Architecture (High-Level)
-- ALB in **public subnets** across ≥2 AZs.
-- ASG in **private subnets** across the same AZs.
-- TG Health Check: `GET /health` expecting `200–399`.
-- TLS: Offloaded at ALB using ACM with SNI (when actually deployed).
-- Prefer stateless apps; stickiness optional and short-lived if used.
 
-> The architecture diagram will be added in `diagrams/architecture.mmd` as part of Step-2.
+- ALB in **public subnets** across ≥2 AZs.  
+- ASG in **private subnets** across the same AZs.  
+- TG Health Check: `GET /health` expecting `200–399`.  
+- TLS: Offloaded at ALB using ACM + SNI (when deployed).  
+- Prefer stateless apps; stickiness optional and short-lived.
 
-## 🗺️ Architecture Diagram
+### 🗺️ Architecture Diagram
+```mermaid
+%% Embedded preview (source kept in diagrams/architecture.mmd)
+flowchart LR
+  U[Users] -->|HTTPS 443| ALB[(ALB)]
+  ALB -->|forward| TG[(Target Group)]
+  TG -->|HTTP 80| ASG[(Auto Scaling Group)]
+  %% Health: /health (200–399), Deregistration delay = 300s
+  %% Security: ALB SG (443 from internet) → ASG SG (80 only from ALB SG)
+  %% TLS: terminated at ALB via ACM + SNI
+```
+## 🔒 Security Model
+
+- **ALB Security Group:** allow inbound `443/tcp` & `80/tcp` from the internet; egress open.  
+- **ASG Security Group:** allow inbound `80/tcp` **only** from ALB SG; no public ingress.  
+- **NACLs** follow least-privilege return paths.
+
+---
+
+## 🧭 NFRs → Design Mapping
+
+| NFR | Design Decision | Rationale / Impact |
+|-----|------------------|--------------------|
+| High Availability | ALB across ≥2 subnets / AZs | Removes single points of failure |
+| Resilience | TG Health Checks + Deregistration Delay | Route only to healthy targets |
+| Elasticity | ASG scaling (Target Tracking in Phase-2) | Auto right-sizing |
+| Security | ALB SG → ASG SG boundary | Enforces least privilege |
+| Observability | CloudWatch metrics (design) | Enables visibility early |
+| Cost Control | **Plan-only** + tagging (`TTL`, `Project`) | Zero cost now; traceable later |
+
+---
+
+## 📏 Acceptance Criteria (Phase-1)
+
+- Architecture goals / constraints / NFRs documented.  
+- Health Check, Deregistration Delay, Cross-Zone, Lifecycle & Termination described.  
+- Security boundary prevents any public ingress to ASG.  
+- ADR-001 (LB choice) exists with **Accepted** status.  
+- Issue/PR templates present.  
+- Repo passes `terraform validate` & `plan` (dry run).
+
+---
+
+## 📂 Repository Structure
+
+elb-asg-blueprint/
+├─ README.md
+├─ diagrams/
+│  ├─ architecture.mmd
+│  ├─ request-sequence.mmd
+│  └─ README.md
+├─ infra/
+│  ├─ main.tf
+│  ├─ variables.tf
+│  ├─ outputs.tf
+│  ├─ README.md
+│  └─ user_data/bootstrap.sh
+├─ runbooks/
+│  ├─ incident-unhealthy-targets.md
+│  ├─ incident-5xx-spike.md
+│  └─ cost-teardown-checklist.md
+├─ policies/
+│  ├─ tagging-guidelines.md
+│  └─ README.md
+├─ tests/
+│  ├─ static-health-contract.sh
+│  ├─ iac-sanity.sh
+│  ├─ health-endpoint-check.sh
+│  └─ README.md
+├─ docs/
+│  ├─ adr/ADR-001-alb-vs-nlb.md
+│  ├─ PORTFOLIO.md
+│  ├─ CHANGELOG.md
+│  └─ assets/
+│     ├─ plan.txt
+│     └─ tf-graph.png
+├─ .github/
+│  ├─ ISSUE_TEMPLATE/
+│  │  ├─ 01-requirements.md
+│  │  └─ 02-adr.md
+│  └─ PULL_REQUEST_TEMPLATE.md
+├─ .gitignore
+└─ Makefile
+
+---
+
+## 🚀 Getting Started (Plan-Only, Zero Cost)
+
+### Prerequisites
+- Terraform ≥ 1.6  
+- *(Optional)* AWS CLI configured — not required for syntax validation  
+- *(Optional)* Mermaid preview plugin for VSCode / GitHub rendering  
+
+---
+
+### Quick Start
+```bash
+# validate structure
+tree -L 2
+
+# run IaC checks
+make fmt
+make validate
+make plan        # dry run only (no apply)
+
+# static contract tests
+make test-static
+make test-iac
+```
+---
+
+## 💰 Cost & Safety
+
+- **Phase-1 runs plan-only**, no resource creation.  
+- Tags control cost visibility (`Project`, `Owner`, `TTL`, `Env`).  
+- Use teardown checklist when deploying in future phases.  
+🔖 See [Tagging Guidelines](policies/tagging-guidelines.md) for governance.
+
+---
+
+## 🧩 Developer Workflow (Makefile)
+
+| Command | Description |
+|----------|--------------|
+| `make fmt` | Format Terraform files |
+| `make validate` | Validate IaC syntax |
+| `make plan` | Dry-run Terraform plan (zero cost) |
+| `make graph` | Generate dependency graph |
+| `make test-static` | Run static contract checks |
+| `make test-iac` | IaC sanity (fmt + validate + plan) |
+| `make test-runtime` | Probe `/health` endpoint (optional) |
+| `make test-all` | Run all static & IaC checks |
+| `make clean` | Remove temp files |
+
+> Use `make test-all` before committing changes.
+
+---
+
+## 🔗 Quick Links
+
+- 📜 [ADR-001 — Choosing ALB](docs/adr/ADR-001-alb-vs-nlb.md)  
+- 🗺️ [Architecture Diagram](diagrams/architecture.mmd)  
+- 🧪 [Tests Overview](tests/README.md)  
+- 🧭 [Runbooks](runbooks/)  
+- 🏷️ [Tagging Guidelines](policies/tagging-guidelines.md)
+
+---
+
+## 🧪 Verification (Zero-Cost)
+
+```bash
+./tests/static-health-contract.sh
+./tests/iac-sanity.sh infra/examples/terraform.tfvars.example
+make plan
+```
+Artifacts:
+
+infra/tf-graph.png
+
+docs/assets/plan.txt (from dry plan output). 
+
+---
+
+## 🖼️ Portfolio Showcase
 
 ```mermaid
 flowchart LR
-  subgraph Internet
-    U[Users]
-  end
-  subgraph VPC
-    direction LR
-    subgraph "Public_Subnets_(AZ-a/b)" 
-      ALB[(Application Load Balancer)]
-    end
-    subgraph "Private_Subnets_(AZ-a/b)" 
-      ASG[(Auto Scaling Group)]
-      TG[(Target Group - HTTP:80)]
-    end
-  end
-  U -->|HTTPS 443| ALB -->|forward| TG -->|HTTP 80| ASG
-  %% Security: ALB SG (443 from internet); ASG SG (80 only from ALB SG)
-  %% Health: TG /health expects 200–399; Deregistration delay = 300s
-  %% TLS: Terminated at ALB via ACM + SNI
+  U[Users] -->|HTTPS| ALB[(ALB)]
+  ALB -->|forward| TG[(Target Group)]
+  TG -->|HTTP| ASG[(Auto Scaling Group)]
 ```
-## 🔒 Security Model
-- **ALB Security Group**: allow inbound `443/tcp` from the internet; egress open.
-- **ASG Security Group**: allow inbound `80/tcp` **only** from the ALB SG; no public ingress.
-- NACLs follow least privilege; note NLB has no SG (not used in Phase-1).
+**Artifacts:**
 
-## 🧭 NFRs → Design Mapping
-| NFR | Design Decision | Rationale/Impact |
-|-----|------------------|------------------|
-| High Availability | ALB across ≥2 subnets in ≥2 AZs | Removes single points of failure at the LB layer |
-| Resilience | TG Health Checks + Deregistration Delay | Route only to healthy targets; protect in-flight sessions |
-| Elasticity | ASG with policy (Target Tracking in Phase-2) | Automatic right-sizing to load |
-| Security | ALB SG → ASG SG boundary | Enforces least privilege between tiers |
-| Observability | CloudWatch metrics by design; Access Logs optional | Enables performance and health visibility |
-| Cost Control | **plan-only** in Phase-1 + tagging (`TTL`, `Project`) | Zero operational cost now; traceable later |
+Architecture diagram (Mermaid)
 
-## 📏 Acceptance Criteria (Phase-1)
-- Architecture goals/constraints/NFRs documented.
-- Health Check, Deregistration Delay, Cross-Zone, Lifecycle & Termination described.
-- Security boundary prevents any public ingress to ASG.
-- ADR-001 (LB choice) exists with **Accepted** status.
-- GitHub Issue/PR templates included and used.
+Terraform graph (tf-graph.png)
 
-## 📊 KPIs
-- Explain the LB choice and ASG integration in ≤ 90 seconds, accurately.
-- Map every NFR to ≥ 1 explicit design decision.
-- Repo passes `terraform validate` and `terraform plan` without errors when IaC is added (later in Phase-1).
+Plan excerpt (docs/assets/plan.txt)
 
-## 📝 Assumptions
-- VPC and subnets exist or will be created via a module later (out of Phase-1).
-- ACM/TLS will be provisioned during real deployment (outside Phase-1).
+---
 
-## 🏷️ Tagging (Cost & Ownership)
-`Project=elb-asg-blueprint`, `Owner=naseeb`, `TTL=1h`, `Env=dev`.
+## ✅ Acceptance & KPIs
 
-## ✅ Step-1 Checklist
-- [ ] This README customized and committed.
-- [ ] `docs/adr/ADR-001-alb-vs-nlb.md` added with status **Accepted**.
-- [ ] GitHub Issue/PR templates added under `.github/`.
-- [ ] Ready to proceed to Step-2 (architecture diagram).
+- [x] Architecture + NFRs documented  
+- [x] Security boundary enforced  
+- [x] Health contract validated  
+- [x] ADR-001 accepted  
+- [x] IaC passes plan-only tests  
+- [x] Runbooks + Policies added  
+- [x] Zero-cost proof complete  
+
+**KPIs**
+- Explain design ≤ 90 s accurately  
+- Map every NFR → design decision  
+- `terraform validate` and `plan` succeed  
+
+---
+
+## 🗺️ Roadmap — Phase-2 (DevOps Tooling)
+
+- CI (GitHub Actions): IaC validation, tag compliance, linting  
+- Containerized test app (Docker)  
+- LocalStack or mock apply testing  
+- CloudWatch alarms (design)  
+- Policy gates via PR automation  
+
+---
+
+## ❓ FAQ
+
+**Why plan-only?**  
+To prove production readiness without any cloud cost.  
+The repo remains deployable when budget or CI is available.
+
+**Can it extend to NLB or GWLB?**  
+Yes — NLB for static IP/TCP, GWLB for security appliances.  
+Covered by ADR-001 as future options.
