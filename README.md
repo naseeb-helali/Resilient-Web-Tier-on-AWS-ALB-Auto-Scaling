@@ -73,7 +73,7 @@ flowchart LR
 ---
 
 ## 📂 Repository Structure
-
+```mermaid
 elb-asg-blueprint/
 ├─ README.md
 ├─ diagrams/
