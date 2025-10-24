@@ -73,7 +73,7 @@ flowchart LR
 ---
 
 ## 📂 Repository Structure
-
+```mermaid
 elb-asg-blueprint/
 ├─ README.md
 ├─ diagrams/
@@ -112,7 +112,7 @@ elb-asg-blueprint/
 │  └─ PULL_REQUEST_TEMPLATE.md
 ├─ .gitignore
 └─ Makefile
-
+```
 ---
 
 ## 🚀 Getting Started (Plan-Only, Zero Cost)
