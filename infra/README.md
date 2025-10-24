@@ -12,5 +12,3 @@ This folder contains the IaC for the web tier:
 cd infra
 terraform fmt -recursive
 terraform validate
-# (optional) Provide values via -var or a tfvars file for deeper plan
-terraform plan -var-file=examples/terraform.tfvars.example
