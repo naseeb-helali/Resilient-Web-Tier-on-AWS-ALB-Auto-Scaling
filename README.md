@@ -112,7 +112,7 @@ elb-asg-blueprint/
 │  └─ PULL_REQUEST_TEMPLATE.md
 ├─ .gitignore
 └─ Makefile
-
+```
 ---
 
 ## 🚀 Getting Started (Plan-Only, Zero Cost)
